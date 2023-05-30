@@ -38,6 +38,46 @@ Os seguintes serviços serão executados:
 
 Obs.: Credencias podem ser alteradas no arquivo `docker-compose.yml`
 
+## Criando uma rede Docker chamada "frontend"
+Se você precisa criar uma rede Docker chamada "frontend" com o driver "bridge", siga as etapas abaixo:
+
+Abra um terminal ou prompt de comando.
+
+Execute o seguinte comando:
+```bash
+docker network create frontend --driver bridge
+```
+Isso criará uma rede chamada "frontend" usando o driver de rede "bridge". Agora você pode usá-la para conectar seus contêineres.
+
+Certifique-se de ter permissões adequadas para executar comandos Docker. Após a execução do comando, a rede "frontend" estará disponível para uso em seus projetos Docker.
+
+## Verificando e substituindo o UID no arquivo .env
+Abra um terminal no Ubuntu.
+
+Digite o seguinte comando para verificar o UID do seu usuário:
+
+```bash
+id -u
+```
+Anote o valor retornado.
+
+Navegue até o diretório onde você possui o arquivo .env do seu projeto.
+
+Abra o arquivo .env com um editor de texto.
+
+Localize a variável **AIRFLOW_UID** no arquivo **.env**.
+
+Substitua o valor atual da variável pelo UID anotado no passo 2.
+
+Exemplo:
+
+```makefile
+AIRFLOW_UID=18984075
+```
+Salve o arquivo .env com as alterações.
+
+Agora, ao executar o comando docker-compose up para iniciar os serviços, o valor do **UID** definido no arquivo **.env** será utilizado no contêiner do Airflow.
+
 ## Comandos úteis para iniciar os serviços do docker-compose:
 
 1.  `docker-compose up`: Este comando inicia os contêineres definidos no arquivo `docker-compose.yml`. Se os contêineres ainda não foram construídos, eles serão construídos antes de serem iniciados. Você pode usar a opção `-d` para executar os contêineres em segundo plano.
