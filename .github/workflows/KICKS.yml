@@ -1,0 +1,43 @@
+name: KICS Infra Scan
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - staging
+      - dev
+  pull_request:
+    branches:
+      - main
+      - master
+      - staging
+      - dev
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - uses: actions/checkout@v2
+      - name: run kics Scan
+        uses: checkmarx/kics-github-action@v1.6.3
+        with:
+          path: "."
+          ignore_on_exit: results
+          output_path: myResults/
+      - name: display kics results
+        run: |
+          cat myResults/results.json
+          high=$(cat myResults/results.json | grep '"HIGH":' | cut -d ':' -f 2 | sed s/,//g)
+          medium=$(cat myResults/results.json | grep '"MEDIUM":' | cut -d ':' -f 2 | sed s/,//g)
+          low=$(cat myResults/results.json | grep '"LOW":' | cut -d ':' -f 2 | sed s/,//g)
+          repo=${{ github.server_url }}/${{ github.repository }}
+          link=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

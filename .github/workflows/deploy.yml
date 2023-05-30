@@ -1,0 +1,84 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up AWS CLI
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+    - name: Install Session Manager Plugin
+      run: |
+        curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
+        sudo dpkg -i session-manager-plugin.deb
+    
+    - name: Install jq
+      run: sudo apt-get install jq -y
+
+    - name: Create project directory
+      env:
+        INSTANCE_NAME: ${{ secrets.INSTANCE_NAME }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+      run: |
+        INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$INSTANCE_NAME" "Name=instance-state-name,Values=running" --query "Reservations[].Instances[].InstanceId" --output text)
+        aws ssm send-command --instance-ids "$INSTANCE_ID" --document-name AWS-RunShellScript --comment 'Create project directory' --parameters 'commands=["mkdir -p /home/ubuntu/data-scope-x"]' --output text
+
+
+    - name: Deploy to EC2
+      env:
+        INSTANCE_NAME: ${{ secrets.INSTANCE_NAME }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+      run: |
+       set -x
+       INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$INSTANCE_NAME" "Name=instance-state-name,Values=running" --query "Reservations[].Instances[].InstanceId" --output text)
+       echo "INSTANCE_ID: $INSTANCE_ID"
+       echo $?
+       ( find . -type f -not -path './.git/*' -not -path './.github/*' -print0 | xargs -0 tar czf project.tar.gz )
+       echo $?
+       aws s3 cp project.tar.gz s3://bgr-infra/project.tar.gz
+       echo $?
+       aws ssm send-command \
+         --instance-ids "$INSTANCE_ID" \
+         --document-name "AWS-RunShellScript" \
+         --comment "Deploy project" \
+         --parameters commands="export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID && export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY && export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION && aws s3 cp s3://bgr-infra/project.tar.gz /home/ubuntu/project.tar.gz && tar xzf /home/ubuntu/project.tar.gz -C /home/ubuntu && cd /home/ubuntu/data-scope-x && docker-compose build" \
+         --output text
+        echo $?
+
+    - name: Run docker-compose up -d on EC2
+      env:
+        INSTANCE_NAME: ${{ secrets.INSTANCE_NAME }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+      run: |
+       set -x
+       INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$INSTANCE_NAME" "Name=instance-state-name,Values=running" --query "Reservations[].Instances[].InstanceId" --output text)
+       aws ssm send-command --instance-ids "$INSTANCE_ID" --document-name "AWS-RunShellScript" --comment "Run docker-compose up -d" --parameters 'commands=["if [ -d '\''/home/ubuntu'\'' ]; then", "cd /home/ubuntu", "docker-compose up -d", "else", "echo '\''Directory not found'\''", "fi"]' --output text
+
+  
+
+
+
+
+
+
+
+

@@ -1,0 +1,32 @@
+name: 'Jupyter CI'
+on: push
+jobs:
+  build-docker-artifacts:
+    runs-on: ubuntu-latest
+    #if: contains(github.ref, 'master') || contains(github.ref, 'dev') || contains(github.ref, 'staging')
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.15.x'
+
+      - uses: actions/checkout@v1
+
+      - name: Docker Build
+        run: |
+         docker build -t jupyter-notebook-airflow:latest /home/runner/work/data-scope-x/data-scope-x/jupyter/
+         
+      - name: Docker Tag Latest
+        run: docker tag jupyter-notebook-airflow:latest ronaldnnr/jupyter-notebook-airflow:latest
+
+      - name: Docker Tag Latest Release
+        run: | 
+          TAG=$(git describe --tags --abbrev=0)
+          docker tag jupyter-notebook-airflow:latest ronaldnnr/jupyter-notebook-airflow:${TAG}
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD}}
+
+      - name: Docker Push Latest
+        run: docker push ronaldnnr/jupyter-notebook-airflow:latest

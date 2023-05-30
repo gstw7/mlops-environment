@@ -1,0 +1,15 @@
+numpy
+matplotlib
+scipy
+pandas
+Cython
+scikit-learn
+statsmodels
+seaborn
+kneed
+seaborn
+yellowbrick
+pmdarima
+statsforecast
+datasetsforecast
+lightgbm
