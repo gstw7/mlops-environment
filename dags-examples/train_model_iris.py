@@ -4,6 +4,7 @@ import mlflow
 import numpy as np
 import pandas as pd
 from airflow import DAG
+from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator
 from mlflow.models.signature import infer_signature
 from sklearn.datasets import load_iris
@@ -28,6 +29,8 @@ dag = DAG(
     schedule_interval='0 0 15 * *',
     tags=['ml', 'ds']
 )
+
+endpoint_mlflow = Variable.get("mlflow_tracking")
 
 
 def train_model():
@@ -54,7 +57,7 @@ def train_model():
     signature = infer_signature(X_train, clf.predict(X_train))
     score = clf.score(X_test, y_test)
 
-    mlflow.set_tracking_uri("http://mlflow:5000")
+    mlflow.set_tracking_uri(endpoint_mlflow)
     mlflow.set_experiment("iris")
     with mlflow.start_run(run_name="run_" + datetime.now().strftime("%Y%m%d_%H%M%S")):
         mlflow.log_metric("score", score)

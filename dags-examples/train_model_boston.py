@@ -5,6 +5,7 @@ import mlflow
 import numpy as np
 import pandas as pd
 from airflow import DAG
+from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator
 from mlflow.models.signature import infer_signature
 from sklearn.linear_model import LinearRegression
@@ -28,6 +29,8 @@ dag = DAG(
     schedule_interval='0 0 15 * *',
     tags=['ml', 'ds']
 )
+
+endpoint_mlflow = Variable.get("mlflow_tracking")
 
 
 def train_and_log_model():
@@ -64,7 +67,7 @@ def train_and_log_model():
     signature = infer_signature(X_train, model.predict(X_train))
     mse = mean_squared_error(y_test, y_pred)
 
-    mlflow.set_tracking_uri("http://mlflow:5000")
+    mlflow.set_tracking_uri(endpoint_mlflow)
     mlflow.set_experiment("boston-housing")
     with mlflow.start_run(run_name="run_" + datetime.now().strftime("%Y%m%d_%H%M%S")):
         mlflow.log_metric("mse", mse)
