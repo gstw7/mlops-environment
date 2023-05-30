@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "iris"
+version = "0.1.0"
+description = ""
+authors = ["Gustavo Oliveira <gust4vo-mlo@hotmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.9.16"
+fastapi = "^0.95.1"
+mlflow = "2.2.2"
+scikit-learn = "^1.2.2"
+uvicorn = "^0.22.0"
+pydantic = "^1.10.7"
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.22.0"
+autopep8 = "^2.0.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
